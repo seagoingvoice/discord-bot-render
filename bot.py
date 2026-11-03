@@ -4,40 +4,21 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
-# ======================
-# Configuración del Bot
-# ======================
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-# ======================
-# Servidor Flask (para mantener vivo en Render)
-# ======================
 app = Flask(__name__)
 
 @app.route("/")
 def home():
     return "Bot de Discord activo ✅"
 
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
 
-def keep_alive():
-    t = Thread(target=run_flask)
-    t.daemon = True
-    t.start()
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ======================
-# Eventos y comandos del bot
-# ======================
 @bot.event
 async def on_ready():
     print(f"Bot conectado como {bot.user} (ID: {bot.user.id})")
-    print("------")
 
 @bot.command(name="ping")
 async def ping(ctx):
@@ -47,12 +28,17 @@ async def ping(ctx):
 async def hola(ctx):
     await ctx.send(f"¡Hola {ctx.author.mention}! 👋")
 
-# ======================
-# Arranque
-# ======================
-if __name__ == "__main__":
-    keep_alive()  # Inicia Flask en segundo plano
+def run_discord_bot():
     token = os.environ.get("DISCORD_TOKEN")
     if not token:
-        raise ValueError("No se encontró la variable de entorno DISCORD_TOKEN")
+        print("ERROR: No se encontró DISCORD_TOKEN")
+        return
     bot.run(token)
+
+# Esto es importante: inicia el bot al importar el módulo
+Thread(target=run_discord_bot, daemon=True).start()
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+    
